@@ -1,0 +1,29 @@
+{
+  "github": {
+    "repo": "your-org/your-repo",
+    "labels": {
+      "planned": "planned",
+      "in_progress": "in-progress",
+      "priority": "priority"
+    }
+  },
+  "sentry": {
+    "org": "your-sentry-org",
+    "project": "your-project",
+    "environment": "production"
+  },
+  "preview": {
+    "dir": "/var/www/preview",
+    "port": 8081,
+    "tailscale_hostname": "your-dev-machine.tail1234.ts.net",
+    "restart_script": "~/.night-agent/scripts/restart-preview.sh"
+  },
+  "agent": {
+    "wakeup_time": "07:00",
+    "wrap_up_buffer_minutes": 15,
+    "max_runtime_hours": 8,
+    "max_fix_attempts": 2,
+    "park_if_touches_files": ["*.sql", ".env", ".env.*", "*/migrations/*"],
+    "flag_if_adds_dependencies": true
+  }
+}

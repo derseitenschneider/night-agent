@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -e
+
+AGENT_DIR="$HOME/.night-agent"
+SESSION="night-agent-$(date +%Y%m%d)"
+REPORT="$AGENT_DIR/morning-report.md"
+STATE="$AGENT_DIR/session-state.json"
+CONFIG="$AGENT_DIR/config.json"
+LOG="$AGENT_DIR/session.log"
+
+# ── Preflight checks ──────────────────────────────────────────────────────────
+
+if [ ! -f "$CONFIG" ]; then
+  echo "❌ Missing config: $CONFIG"
+  echo "   Copy ~/.night-agent/config.example.json to config.json and fill in your values."
+  exit 1
+fi
+
+if ! command -v gh &>/dev/null; then
+  echo "❌ GitHub CLI (gh) not found. Install it first."
+  exit 1
+fi
+
+if ! command -v tmux &>/dev/null; then
+  echo "❌ tmux not found."
+  exit 1
+fi
+
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+  echo "⚠️  Night agent already running."
+  echo "   Attach with: tmux attach -t $SESSION"
+  echo "   Report at:   $REPORT"
+  exit 1
+fi
+
+# ── Reset state ───────────────────────────────────────────────────────────────
+
+START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+cat > "$STATE" <<EOF
+{
+  "session": "$(date +%Y-%m-%d)",
+  "started_at": "$START_TIME",
+  "phase": "sentry",
+  "completed": [],
+  "parked": [],
+  "active_preview_branch": null,
+  "morning_report": []
+}
+EOF
+
+# Reset morning report
+cat > "$REPORT" <<EOF
+# 🌙 Night Agent Report — $(date '+%A, %d %B %Y')
+
+_Started at $(date '+%H:%M')_
+
+---
+
+EOF
+
+# ── Launch ────────────────────────────────────────────────────────────────────
+
+tmux new-session -d -s "$SESSION" \
+  "claude --dangerously-skip-permissions \
+    -p \"$(cat $AGENT_DIR/prompt.md)\" \
+    2>&1 | tee $LOG"
+
+echo ""
+echo "🌙 Night agent started"
+echo "   Session:  $SESSION"
+echo "   Report:   $REPORT"
+echo "   Log:      $LOG"
+echo ""
+echo "   Attach:   tmux attach -t $SESSION"
+echo "   Kill:     tmux kill-session -t $SESSION"
+echo ""
+
