@@ -62,10 +62,16 @@ EOF
 
 # ── Launch ────────────────────────────────────────────────────────────────────
 
-tmux new-session -d -s "$SESSION" \
-  "claude --dangerously-skip-permissions \
-    -p \"$(cat $AGENT_DIR/prompt.md)\" \
-    2>&1 | tee $LOG"
+LAUNCHER="$AGENT_DIR/.launcher.sh"
+cat > "$LAUNCHER" <<'SCRIPT'
+#!/bin/bash
+claude --dangerously-skip-permissions \
+  -p "$(cat "$HOME/.night-agent/prompt.md")" \
+  2>&1 | tee "$HOME/.night-agent/session.log"
+SCRIPT
+chmod +x "$LAUNCHER"
+
+tmux new-session -d -s "$SESSION" "bash $LAUNCHER"
 
 echo ""
 echo "🌙 Night agent started"
